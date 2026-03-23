@@ -1,7 +1,17 @@
+# ©️ Dan Gazizullin, 2021-2023# This file is a part of Hikka Userbot# 🌐 https://github.com/hikariatama/Hikka# You can redistribute it and/or modify it under the terms of the GNU AGPLv3# 🔑 https://www.gnu.org/licenses/agpl-3.0.html# ©️ Codrago, 2024-2030# This file is a part of Heroku Userbot# 🌐 https://github.com/coddrago/Heroku
+# You can redistribute it and/or modify it under the terms of the GNU AGPLv3
+# 🔑 https://www.gnu.org/licenses/agpl-3.0.html
+
+import getpass
+import hashlib
+import os
+import subprocess
+import sys
 import asyncio
 import aiohttp
 from aiohttp import web
 import threading
+import os
 
 # ========== ВЕБ-СЕРВЕР ДЛЯ HEALTHCHECK ==========
 async def health_handler(request):
@@ -9,7 +19,7 @@ async def health_handler(request):
 
 async def run_health_server():
     app = web.Application()
-    app.router.add_get('/health', health_handler)
+    app.router.add_get('/health', health_handler)  # адрес /health
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', int(os.getenv("PORT", 10000)))
@@ -33,39 +43,13 @@ async def self_pinger():
             except Exception as e:
                 print(f"🔴 Ошибка пинга: {e}")
 
-# ========== ЗАПУСК ==========
-async def main():
-    # Запускаем healthcheck сервер
-    asyncio.create_task(run_health_server())
-    
-    # Запускаем встроенный пингер
-    asyncio.create_task(self_pinger())
-    
-    # Тут твой код запуска юзербота
-    # ...
-
-# Запуск
-asyncio.run(main())
-"""Entry point. Checks for user and starts main script"""
-
-# ©️ Dan Gazizullin, 2021-2023
-# This file is a part of Hikka Userbot
-# 🌐 https://github.com/hikariatama/Hikka
-# You can redistribute it and/or modify it under the terms of the GNU AGPLv3
-# 🔑 https://www.gnu.org/licenses/agpl-3.0.html
-
-# ©️ Codrago, 2024-2030
-# This file is a part of Heroku Userbot
-# 🌐 https://github.com/coddrago/Heroku
-# You can redistribute it and/or modify it under the terms of the GNU AGPLv3
-# 🔑 https://www.gnu.org/licenses/agpl-3.0.html
-
-import getpass
-import hashlib
-import os
-import subprocess
-import sys
-
+# ========== ЗАПУСК ПИНГЕРА В ОТДЕЛЬНОМ ПОТОКЕ ==========
+def start_pinger():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(run_health_server())
+    loop.create_task(self_pinger())
+    loop.run_forever()
 from ._internal import restart
 
 if "--no-git" in sys.argv:
