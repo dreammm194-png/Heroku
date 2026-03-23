@@ -1,3 +1,51 @@
+import asyncio
+import aiohttp
+from aiohttp import web
+import threading
+
+# ========== ВЕБ-СЕРВЕР ДЛЯ HEALTHCHECK ==========
+async def health_handler(request):
+    return web.Response(text="OK")
+
+async def run_health_server():
+    app = web.Application()
+    app.router.add_get('/health', health_handler)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', int(os.getenv("PORT", 10000)))
+    await site.start()
+    print(f"✅ Healthcheck сервер запущен на порту {os.getenv('PORT', 10000)}")
+
+# ========== ВСТРОЕННЫЙ ПИНГЕР ==========
+async def self_pinger():
+    """Раз в 5 минут стучится к самому себе, чтобы Render не усыпил"""
+    port = os.getenv("PORT", 10000)
+    url = f"http://localhost:{port}/health"
+    async with aiohttp.ClientSession() as session:
+        while True:
+            await asyncio.sleep(300)  # 5 минут
+            try:
+                async with session.get(url, timeout=10) as resp:
+                    if resp.status == 200:
+                        print("🟢 Пинг успешен — бот не спит")
+                    else:
+                        print(f"⚠️ Пинг вернул {resp.status}")
+            except Exception as e:
+                print(f"🔴 Ошибка пинга: {e}")
+
+# ========== ЗАПУСК ==========
+async def main():
+    # Запускаем healthcheck сервер
+    asyncio.create_task(run_health_server())
+    
+    # Запускаем встроенный пингер
+    asyncio.create_task(self_pinger())
+    
+    # Тут твой код запуска юзербота
+    # ...
+
+# Запуск
+asyncio.run(main())
 """Entry point. Checks for user and starts main script"""
 
 # ©️ Dan Gazizullin, 2021-2023
